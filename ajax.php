@@ -1,5 +1,5 @@
 <?php
-include_once 'db.php';
+include_once 'config/db.php';
 session_start();
 
 if (isset($_POST['login'])) {
@@ -98,13 +98,39 @@ if (isset($_POST['edit_room'])) {
 }
 
 if (isset($_GET['delete_room'])) {
-    $room_id = $_GET['delete_room'];
-    $sql = "UPDATE room set deleteStatus = '1' WHERE room_id = '$room_id' AND status IS NULL";
-    $result = mysqli_query($connection, $sql);
-    if ($result) {
-        header("Location:index.php?room_mang&success");
-    } else {
-        header("Location:index.php?room_mang&error");
+    $room_id = mysqli_real_escape_string($connection, $_GET['delete_room']);
+    
+    // Verificar si la habitación está ocupada
+    $check_query = "SELECT status FROM room WHERE room_id = '$room_id'";
+    $check_result = mysqli_query($connection, $check_query);
+    $room = mysqli_fetch_assoc($check_result);
+    
+    if ($room['status'] == 1) {
+        // La habitación está ocupada
+        header("Location:index.php?room_mang&error=occupied");
+        exit();
+    }
+    
+    // Iniciar transacción
+    mysqli_begin_transaction($connection);
+    
+    try {
+        // Actualizar el estado de eliminación
+        $sql = "UPDATE room SET deleteStatus = '1' WHERE room_id = '$room_id'";
+        if (!mysqli_query($connection, $sql)) {
+            throw new Exception("Error al eliminar la habitación");
+        }
+        
+        // Confirmar la transacción
+        mysqli_commit($connection);
+        header("Location:index.php?room_mang&success=deleted");
+        exit();
+        
+    } catch (Exception $e) {
+        // Revertir cambios si algo sale mal
+        mysqli_rollback($connection);
+        header("Location:index.php?room_mang&error=" . urlencode($e->getMessage()));
+        exit();
     }
 }
 

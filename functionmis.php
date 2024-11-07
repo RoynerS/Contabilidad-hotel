@@ -5,68 +5,77 @@
  * Date: 10/21/17
  * Time: 4:16 PM
  */
-include_once 'db.php';
+
+// Cambiar la ruta de inclusión para db.php
+include_once "config/db.php";  // Asumiendo que db.php está en la carpeta config
+
+// Agregar manejo de errores para la conexión
+if (!$connection) {
+    die("Error de conexión: " . mysqli_connect_error());
+}
 
 if (isset($_POST['login'])) {
     $username = $_POST['username'];
     $password = $_POST['password'];
-    echo $username;
-    echo $password;
-    $query = "select * from login where username = '$username' and password='$password'";
+
+    // Agregar escape de caracteres para prevenir SQL injection
+    $username = mysqli_real_escape_string($connection, $username);
+    $password = mysqli_real_escape_string($connection, $password);
+
+    $query = "SELECT * FROM login WHERE username = '$username' AND password='$password'";
     $result = mysqli_query($connection, $query);
+
+    if (!$result) {
+        die("Error en la consulta: " . mysqli_error($connection));
+    }
 
     $userdetails = mysqli_fetch_assoc($result);
 
-    if($userdetails['username']=='manager')
-    {
+    if ($userdetails['username'] == 'manager') {
         header('Location: index.php?room_mang');
-    }
-    else{
-
+        exit();
+    } else {
         header('Location: login.php');
+        exit();
     }
-
-
 }
 
 if (isset($_POST['submit'])) {
+    // ... código existente ...
 
-    $emp_id = $_POST['emp_id'];
-    $first_name = $_POST['first_name'];
-    $last_name = $_POST['last_name'];
-    $staff_type_id = $_POST['staff_type_id'];
-    $shift_id= $_POST['shift_id'];
-    $id_card_type = $_POST['id_card_type'];
-    $id_card_no = $_POST['id_card_no'];
-    $address = $_POST['address'];
-    $contact_no = $_POST['contact_no'];
-    $joining_date = strtotime($_POST['joining_date']);
+    $query = "UPDATE staff SET emp_name='$first_name $last_name', 
+              staff_type_id='$staff_type_id', shift_id='$shift_id', 
+              id_card_type=$id_card_type, id_card_no='$id_card_no',
+              address='$address', contact_no='$contact_no',
+              joining_date='$joining_date', salary='$salary'
+              WHERE emp_id=$emp_id";
 
-    $salary = $_POST['salary'];
-
-    $query="UPDATE staff
-SET emp_name='$first_name $last_name', staff_type_id='$staff_type_id', shift_id='$shift_id', id_card_type=$id_card_type,
-id_card_no='$id_card_no',address='$address',contact_no='$contact_no',joining_date='$joining_date',salary='$salary'
-WHERE emp_id=$emp_id ";
-//echo $query;
-    if (mysqli_query($connection, $query)) {
-        header('Location: index.php?staff_mang');
-    } else {
-        echo "Error updating record: " . mysqli_error($conn);
+    if (!mysqli_query($connection, $query)) {
+        die("Error actualizando registro: " . mysqli_error($connection));
     }
-
-
+    header('Location: index.php?staff_mang');
+    exit();
 }
 
-if (isset($_GET['empid'])!="")
-{
-   $emp_id=$_GET['empid'];
-    $deleteQuery = "DELETE FROM staff WHERE emp_id=$emp_id";
-    if (mysqli_query($connection, $deleteQuery)) {
-        header('Location: index.php?staff_mang');
-    } else {
-        echo "Error updating record: " . mysqli_error($connection);
+if (isset($_GET['empid']) && $_GET['empid'] != "") {
+    $emp_id = mysqli_real_escape_string($connection, $_GET['empid']);
+    
+    // Primero eliminar  registros relacionados en emp_history
+    $deleteHistoryQuery = "DELETE FROM emp_history WHERE emp_id = $emp_id";
+    if (!mysqli_query($connection, $deleteHistoryQuery)) {
+        die("Error eliminando historial: " . mysqli_error($connection));
     }
+    
+    // Luego eliminar el empleado
+    $deleteStaffQuery = "DELETE FROM staff WHERE emp_id = $emp_id";
+    if (!mysqli_query($connection, $deleteStaffQuery)) {
+        die("Error eliminando empleado: " . mysqli_error($connection));
+    }
+    
+    header('Location: index.php?staff_mang');
+    exit();
 }
 
+// Cerrar la conexión al final del script
+mysqli_close($connection);
 ?>

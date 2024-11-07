@@ -1,8 +1,6 @@
 <?php 
-    include './db.php';
+    include './config/db.php';
     $sql = "SELECT * FROM room WHERE status = '1'";
     $query = $connection->query($sql);
-
     echo "$query->num_rows";
-
 ?>

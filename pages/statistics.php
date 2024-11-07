@@ -1,7 +1,9 @@
 <?php
-include_once "db.php";
-include_once "header.php";
-include_once "sidebar.php";
+
+include_once "./config/db.php";  // Ajustado para apuntar a la carpeta config
+include_once "./includes/header.php";  // Ajustado para apuntar a la carpeta includes
+include_once "./includes/sidebar.php";  // Ajustado para apuntar a la carpeta includes
+
 ?>
 
 <html>
@@ -130,5 +132,5 @@ include_once "sidebar.php";
   </body>
 </html>
 <?php
-include_once "footer.php";
+include_once "./includes/footer.php";
 ?>
